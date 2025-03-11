@@ -1,0 +1,22 @@
+meta {
+  name: change role
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/change-role
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzkzMDgzNDAsImlhdCI6MTczOTMwNDc0MCwidXNlcklEIjoxLCJyb2xlIjoiYWRtaW4iLCJwZXJtaXNzaW9uTWFzayI6NDk2fQ.n8l471lPwwFzOs1XQNiMvpcroIwXzhsBlMt-ADQ-qlY
+}
+
+body:json {
+  {
+    "userID": 2,
+    "newRole": "admin"
+  }
+}

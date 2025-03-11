@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  auth:
+    image: jwt-auth:local
+    container_name: auth
+    depends_on:
+      goose:
+        condition: service_completed_successfully
+    environment:
+      HTTP_PORT: 8000
+      ENV: ${ENV}
+      DB_HOST: postgres-auth
+      DB_PORT: 5003
+      DB_USER: postgres
+      DB_NAME: auth-db
+      DB_PASSWORD: ${DB_PASSWORD}
+      ADMIN_LOGIN: admin
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    command: ["app"]
+
+    ports:
+      - "8000:8000"
+
+
+  postgres-auth:
+    image: postgres:14-alpine
+    container_name: auth-db
+    ports:
+      - "5003:5003"
+    expose:
+      - "5003"
+    command: -p 5003
+    environment:
+      - POSTGRES_DB=auth-db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./db/data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -p 5003" ]
+      interval: 5s
+      timeout: 20s
+      retries: 5
+
+  goose:
+    image: artsafin/goose-migrations:latest
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/db/migrations
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: "postgres://postgres:${DB_PASSWORD}@postgres-auth:5003/auth-db?sslmode=disable"
+    command: [ "-dir", "/db/migrations", "up" ]

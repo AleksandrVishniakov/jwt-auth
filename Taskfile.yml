@@ -1,0 +1,31 @@
+version: '3'
+
+vars:
+  MAIN_PATH: ./cmd/app/main.go
+  IMAGE_NAME: jwt-auth:local
+
+tasks:
+  run-docker:
+    deps: [build-image]
+    cmds:
+      - cmd: docker compose up
+
+  run-local:
+    cmds:
+      - cmd: go run {{.MAIN_PATH}}
+
+  build-image:
+    cmds:
+      - cmd: docker build -t {{.IMAGE_NAME}} .
+  
+
+  fmt:
+    cmds:
+      - cmd: go mod tidy
+      - cmd: go fmt ./...
+      - cmd: goimports -w ./...
+
+  generate-sqlc:
+    cmds:
+      - cmd: sqlc vet
+      - cmd: sqlc generate

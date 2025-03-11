@@ -1,0 +1,18 @@
+roles:
+  student:
+    default: true
+    permissions:
+      - "crud_personal_issues"
+      - "comment_personal_issues"
+      - "crud_personal_comments"
+      - "close_personal_issues"
+  
+  admin:
+    super: true
+    permissions:
+      - "update_user_role"
+      - "comment_external_issues"
+      - "crud_personal_comments"
+      - "close_external_issues"
+      - "see_issues_list"
+      - "collect_issues_statistics"
