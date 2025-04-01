@@ -48,7 +48,7 @@ func Internal(opts ...HTTPErrorOption) *HTTPError {
 
 func Authorization(opts ...HTTPErrorOption) *HTTPError {
 	err := NewError(
-		WithStatusCode(http.StatusForbidden),
+		WithStatusCode(http.StatusUnauthorized),
 		WithMessage("authorization error"),
 	)
 

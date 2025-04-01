@@ -16,3 +16,4 @@ roles:
       - "close_external_issues"
       - "see_issues_list"
       - "collect_issues_statistics"
+      - "see_profiles"

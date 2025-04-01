@@ -33,11 +33,10 @@ func NewLoginRequest(
 	}
 
 	return &LoginRequest{
-		Login: login,
+		Login:    login,
 		Password: password,
 	}, nil
 }
-
 
 type RegisterRequest struct {
 	Login    string
@@ -66,14 +65,14 @@ func NewRegisterRequest(
 	}
 
 	return &RegisterRequest{
-		Login: login,
+		Login:    login,
 		Password: password,
 	}, nil
 }
 
 type UpdateUserRoleRequest struct {
-	UserID int32
-	Role string
+	UserID          int32
+	Role            string
 	PermissionsMask int64
 }
 
@@ -87,7 +86,7 @@ func NewUpdateUserRoleRequest(
 	if userID < 1 {
 		return nil, errors.New("invalid user id")
 	}
-	
+
 	if permissionsMask < 0 {
 		return nil, errors.New("invalid permissions mask")
 	}
@@ -97,8 +96,32 @@ func NewUpdateUserRoleRequest(
 	}
 
 	return &UpdateUserRoleRequest{
-		UserID: userID,
-		Role: role,
+		UserID:          userID,
+		Role:            role,
 		PermissionsMask: permissionsMask,
+	}, nil
+}
+
+type GetUserByIDRequest struct {
+	UserID         int32
+	PermissionMask int64
+	ProfileID      int32
+}
+
+type GetUserByIDResponse struct {
+	ID    int32
+	Login string
+	Role  string
+}
+
+func NewGetUserByIDRequest(
+	userID int32,
+	permissionMask int64,
+	profileID int32,
+) (*GetUserByIDRequest, error) {
+	return &GetUserByIDRequest{
+		UserID:         userID,
+		PermissionMask: permissionMask,
+		ProfileID:      profileID,
 	}, nil
 }

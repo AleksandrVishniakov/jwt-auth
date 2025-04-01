@@ -15,6 +15,8 @@ const (
 
 	CanSeeIssuesList
 	CanCollectIssuesStatistics
+
+	CanSeeProfiles
 )
 
 func HasPermission(mask int64, permission Permission) bool {

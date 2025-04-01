@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/AleksandrVishniakov/jwt-auth/internal/e"
 	"github.com/AleksandrVishniakov/jwt-auth/internal/usecases"
@@ -33,12 +34,16 @@ type Usecase interface {
 		ctx context.Context,
 		req *usecases.UpdateUserRoleRequest,
 	) (err error)
+
+	GetUserByID(
+		ctx context.Context,
+		req *usecases.GetUserByIDRequest,
+	) (*usecases.GetUserByIDResponse, error)
 }
 
-
 type Handler struct {
-	log *slog.Logger
-	usecase Usecase
+	log         *slog.Logger
+	usecase     Usecase
 	tokenParser TokenParser
 }
 
@@ -48,8 +53,8 @@ func New(
 	tokenParser TokenParser,
 ) *Handler {
 	return &Handler{
-		log: log,
-		usecase: usecase,
+		log:         log,
+		usecase:     usecase,
 		tokenParser: tokenParser,
 	}
 }
@@ -65,10 +70,11 @@ func (h *Handler) InitRoutes() http.Handler {
 	v1.Handle("POST /login", Error(h.Login))
 	v1.Handle("POST /register", Error(h.Register))
 	v1.Handle("PUT /change-role", jwt(Error(h.ChangeRole)))
+	v1.Handle("GET /user/{id}", jwt(Error(h.GetUser)))
 
 	mux.Handle("/v1/", http.StripPrefix("/v1", v1))
 
-	return http.StripPrefix("/api", logger(mux))
+	return http.StripPrefix("/api", logger(CORS(mux)))
 }
 
 func (h *Handler) Ping(w http.ResponseWriter, r *http.Request) error {
@@ -105,14 +111,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) error {
 		return e.Authorization(e.WithError(err))
 	}
 
-	_ = EncodeResponse(w, struct{
-		ID int32 `json:"id"`
+	_ = EncodeResponse(w, struct {
+		ID    int32  `json:"id"`
 		Token string `json:"token"`
 	}{
-		ID: resp.ID,
+		ID:    resp.ID,
 		Token: resp.Token,
 	}, http.StatusOK)
-	
 
 	return nil
 }
@@ -147,14 +152,13 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) error {
 		return e.Authorization(e.WithError(err))
 	}
 
-	_ = EncodeResponse(w, struct{
-		ID int32 `json:"id"`
+	_ = EncodeResponse(w, struct {
+		ID    int32  `json:"id"`
 		Token string `json:"token"`
 	}{
-		ID: resp.ID,
+		ID:    resp.ID,
 		Token: resp.Token,
 	}, http.StatusOK)
-	
 
 	return nil
 }
@@ -163,7 +167,7 @@ func (h *Handler) ChangeRole(w http.ResponseWriter, r *http.Request) error {
 	defer r.Body.Close()
 
 	type changeRoleRequest struct {
-		UserID    int32 `json:"userID"`
+		UserID  int32  `json:"userID"`
 		NewRole string `json:"newRole"`
 	}
 
@@ -196,4 +200,55 @@ func (h *Handler) ChangeRole(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return nil
+}
+
+func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) error {
+	defer r.Body.Close()
+
+	mask, err := PermissionMaskFromContext(r.Context())
+	if err != nil {
+		return e.Authorization()
+	}
+
+	userID, err := UserIDFromContext(r.Context())
+	if err != nil {
+		return e.Authorization()
+	}
+
+	profileID, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return e.BadRequest()
+	}
+
+	dto, err := usecases.NewGetUserByIDRequest(
+		userID,
+		mask,
+		int32(profileID),
+	)
+	if err != nil {
+		return e.BadRequest(e.WithError(err))
+	}
+
+	resp, err := h.usecase.GetUserByID(r.Context(), dto)
+	if err != nil {
+		if errors.Is(err, e.ErrForbiddenAction) {
+			return e.Forbidden()
+		}
+
+		if errors.Is(err, e.ErrNotFound) {
+			return e.NotFound()
+		}
+
+		return e.Internal(e.WithError(err))
+	}
+
+	return EncodeResponse(w, &struct {
+		ID    int32  `json:"id"`
+		Login string `json:"login"`
+		Role  string `json:"role"`
+	}{
+		ID:    resp.ID,
+		Login: resp.Login,
+		Role:  resp.Role,
+	}, http.StatusOK)
 }

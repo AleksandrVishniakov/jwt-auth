@@ -16,6 +16,7 @@ var permKeys = map[string]Permission{
 	"close_external_issues":     CanCloseExternalIssues,
 	"see_issues_list":           CanSeeIssuesList,
 	"collect_issues_statistics": CanCollectIssuesStatistics,
+	"see_profiles":              CanSeeProfiles,
 }
 
 type RoleStorage interface {

@@ -43,15 +43,15 @@ type UserStorage interface {
 
 type TokenGenerator interface {
 	Token(
-		userID int32, 
-		role string, 
+		userID int32,
+		role string,
 		permissionMask int64,
 	) (string, error)
 }
 
 type Usecase struct {
-	log *slog.Logger
-	storage UserStorage
+	log            *slog.Logger
+	storage        UserStorage
 	tokenGenerator TokenGenerator
 }
 
@@ -61,8 +61,8 @@ func New(
 	tokenGenerator TokenGenerator,
 ) *Usecase {
 	return &Usecase{
-		log: log,
-		storage: storage,
+		log:            log,
+		storage:        storage,
 		tokenGenerator: tokenGenerator,
 	}
 }
@@ -91,7 +91,7 @@ func (u *Usecase) Login(
 	}
 
 	return &LoginResponse{
-		ID: user.ID,
+		ID:    user.ID,
 		Token: token,
 	}, nil
 }
@@ -125,7 +125,7 @@ func (u *Usecase) Register(
 	}
 
 	return &RegisterResponse{
-		ID: id,
+		ID:    id,
 		Token: token,
 	}, nil
 }
@@ -172,3 +172,26 @@ func (u *Usecase) CreateSuperUser(
 	return nil
 }
 
+func (u *Usecase) GetUserByID(
+	ctx context.Context,
+	req *GetUserByIDRequest,
+) (*GetUserByIDResponse, error) {
+	const src = "Usecase.CreateSuperUser"
+	log := u.log.With(slog.String("src", src))
+	log.Debug("get user", slog.Int("id", int(req.ProfileID)))
+
+	if (req.UserID != req.ProfileID) && !roles.HasPermission(req.PermissionMask, roles.CanSeeProfiles) {
+		return nil, e.ErrForbiddenAction
+	}
+
+	entity, err := u.storage.GetUserById(ctx, req.ProfileID)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to get user: %w", src, err)
+	}
+
+	return &GetUserByIDResponse{
+		ID:    entity.ID,
+		Login: entity.Login,
+		Role:  entity.Role,
+	}, nil
+}
